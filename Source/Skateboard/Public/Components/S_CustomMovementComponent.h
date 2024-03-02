@@ -16,6 +16,8 @@ class SKATEBOARD_API US_CustomMovementComponent : public UCharacterMovementCompo
 
 public:
 
+#pragma region SpeedProperties
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Speed")
 	float MaxSkateSpeed = 1000;
 
@@ -31,11 +33,17 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Speed")
 	float HorizontalDecelerationSpeed = 0.75;
 
+#pragma endregion SpeedProperties
+
+#pragma region RotationProperties
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Rotation")
 	float FloorRotationControl = 0.75;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Rotation")
 	float AirRotationControl = 0.1;
+
+#pragma endregion RotationProperties
 
 protected:
 
