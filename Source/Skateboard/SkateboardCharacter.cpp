@@ -10,6 +10,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Components/S_CustomMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -20,6 +21,7 @@ ASkateboardCharacter::ASkateboardCharacter(const FObjectInitializer& ObjectIniti
 {
 	// Setting init values to movement properties
 	bAbleToImpulse = true;
+	bIsAbleToJump = true;
 
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -56,6 +58,9 @@ void ASkateboardCharacter::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 
+	// Setting animation instance reference
+	PlayerAnimInstance = GetMesh()->GetAnimInstance();
+
 	//Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
@@ -64,8 +69,6 @@ void ASkateboardCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
-
-	
 }
 
 void ASkateboardCharacter::Tick(float DeltaSeconds)
@@ -84,9 +87,45 @@ void ASkateboardCharacter::Tick(float DeltaSeconds)
 		AddMovementInput(ForwardDirection, 1);
 	}
 
-	if(bIsDecelerating)
+	if(bIsMovingHorizontally)
 	{
 		
+	}
+
+	if(!bIsImpulsing && !bIsDecelerating && GetCharacterMovement()->MovementMode != EMovementMode::MOVE_Falling)
+	{
+		if (YawRotation.UnrotateVector(GetCharacterMovement()->Velocity).X > 100)
+		{
+			if (bIsMovingHorizontally)
+			{
+				CurrentDecelerationSpeed = CustomMovementComponent->HorizontalDecelerationSpeed;
+			}
+
+			GetCharacterMovement()->MaxWalkSpeed = FMath::Clamp(GetCharacterMovement()->MaxWalkSpeed - CurrentDecelerationSpeed,
+				0, CustomMovementComponent->MaxSkateSpeed);
+			AddMovementInput(ForwardDirection, 1);
+		}
+		else if (!bIsTryingToImpulse)
+		{
+			GetCharacterMovement()->MaxWalkSpeed = 0;
+		}
+	}
+}
+
+void ASkateboardCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
+{
+	Super::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
+
+	Super::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
+	if (PrevMovementMode == MOVE_Walking && GetCharacterMovement()->MovementMode == MOVE_Falling)
+	{
+		InAirTime = 0;
+		UE_LOG(LogTemp, Warning, TEXT("InAirTime Started"));
+	}
+	if (PrevMovementMode == MOVE_Falling)
+	{
+		GetWorld()->GetTimerManager().SetTimer(JumpingTimer, this, &ASkateboardCharacter::SetAbleToJump, 1, false);
+		UE_LOG(LogTemp, Warning, TEXT("InAirTime: %f"), InAirTime);
 	}
 }
 
@@ -98,7 +137,7 @@ void ASkateboardCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent)) {
 		
 		//Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ASkateboardCharacter::InitJump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
 		//Moving
@@ -134,23 +173,31 @@ void ASkateboardCharacter::Move(const FInputActionValue& Value)
 			if(bAbleToImpulse)
 			{
 				bIsImpulsing = true;
-				SpeedUpSkateboard();
-				FTimerHandle TimerHandle;
+				bIsAbleToDecelerate = false;
 				bAbleToImpulse = false;
-				GetWorld()->GetTimerManager().SetTimer(TimerHandle, [&]
-					{
-						bAbleToImpulse = true;
-					}, 1, false);
+				bIsAbleToJump = false;
+				bIsAbleToMoveHorizontally = false;
+				GetWorld()->GetTimerManager().ClearTimer(JumpingTimer);
+				if (PlayerAnimInstance && PushMontage)
+				{
+					PlayerAnimInstance->Montage_Play(PushMontage);
+				}
+			}
+			else if(GetCharacterMovement()->MovementMode != EMovementMode::MOVE_Falling)
+			{
+				bIsImpulsing = false;
 			}
 		}
-		else if(MovementVector.Y < 0)
+		else if(MovementVector.Y < 0 && bIsAbleToDecelerate && !bIsJumping)
 		{
 			bIsTryingToImpulse = false;
 			bIsDecelerating = true;
 
 			CurrentDecelerationSpeed = CustomMovementComponent->DecelerationSpeed;
+
 			CustomMovementComponent->MaxWalkSpeed = FMath::Clamp(GetCharacterMovement()->MaxWalkSpeed - CurrentDecelerationSpeed,
 				0, CustomMovementComponent->MaxSkateSpeed);
+
 			if (YawRotation.UnrotateVector(GetCharacterMovement()->Velocity).X < 100)
 			{
 				GetCharacterMovement()->MaxWalkSpeed = 0;
@@ -164,7 +211,7 @@ void ASkateboardCharacter::Move(const FInputActionValue& Value)
 		// get right vector 
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-		if(YawRotation.UnrotateVector(GetCharacterMovement()->Velocity).X > 50)
+		if(YawRotation.UnrotateVector(GetCharacterMovement()->Velocity).X > 50 && bIsAbleToMoveHorizontally)
 		{
 			float ControlMove = MovementVector.X * CustomMovementComponent->MaxWalkSpeed *
 				(CustomMovementComponent->MovementMode == MOVE_Walking ? CustomMovementComponent->FloorRotationControl 
@@ -177,6 +224,10 @@ void ASkateboardCharacter::Move(const FInputActionValue& Value)
 
 			AddActorWorldRotation(FRotator(0, FinalMovementXValue, 0));
 		}
+		else if (!bIsImpulsing && bIsDecelerating)
+		{
+			GetCharacterMovement()->MaxWalkSpeed = 0;
+		}
 	}
 }
 
@@ -188,6 +239,27 @@ void ASkateboardCharacter::StopForwardMovement(const FInputActionValue& Value)
 void ASkateboardCharacter::StopHorizontalMovement(const FInputActionValue& Value)
 {
 	bIsMovingHorizontally = false;
+}
+
+void ASkateboardCharacter::InitJump()
+{
+	if (!bIsAbleToJump) return;
+
+	if (GetCharacterMovement()->MaxWalkSpeed < 200)
+	{
+		return;
+	}
+
+	bIsAbleToJump = false;
+	bIsJumping = true;
+
+	GetCharacterMovement()->JumpZVelocity = FMath::Clamp(GetCharacterMovement()->MaxWalkSpeed, 0,
+		CustomMovementComponent->MaxJumpZSpeed);
+
+	if (PlayerAnimInstance && JumpMontage)
+	{
+		PlayerAnimInstance->Montage_Play(JumpMontage);
+	}
 }
 
 void ASkateboardCharacter::Look(const FInputActionValue& Value)
@@ -218,4 +290,37 @@ void ASkateboardCharacter::SpeedUpSkateboard()
 {
 	GetCharacterMovement()->MaxWalkSpeed = FMath::Clamp(GetCharacterMovement()->MaxWalkSpeed +
 		CustomMovementComponent->ImpulseSpeed, 0, CustomMovementComponent->MaxSkateSpeed);
+}
+
+void ASkateboardCharacter::PlaySpeedUpSound()
+{
+	if (IsValid(SkatePushSoundCue))
+	{
+		UGameplayStatics::PlaySound2D(GetWorld(), SkatePushSoundCue);
+	}
+}
+
+void ASkateboardCharacter::Jumping()
+{
+	//Virtual method to jump
+	Jump();
+}
+
+void ASkateboardCharacter::RestoreSkateStates()
+{
+	bIsAbleToJump = true;
+	bIsAbleToMoveHorizontally = true;
+	bIsTryingToImpulse = false;
+	bIsAbleToDecelerate = true;
+	bAbleToImpulse = true;
+}
+
+void ASkateboardCharacter::ResetJump()
+{
+	bIsJumping = false;
+}
+
+void ASkateboardCharacter::SetAbleToJump()
+{
+	bIsAbleToJump = true;
 }

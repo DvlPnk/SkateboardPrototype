@@ -80,12 +80,50 @@ protected:
 	bool bIsDecelerating;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
+	bool bIsAbleToDecelerate;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
 	bool bIsMovingHorizontally;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
+	bool bIsAbleToMoveHorizontally;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
+	bool bIsJumping;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
+	bool bIsAbleToJump;
+
+	UPROPERTY()
+	FTimerHandle JumpingTimer;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
+	float InAirTime;
 
 protected:
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	US_CustomMovementComponent* CustomMovementComponent;
+
+#pragma region Animation
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	UAnimInstance* PlayerAnimInstance;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	UAnimMontage* PushMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	UAnimMontage* JumpMontage;
+
+#pragma endregion Animation
+
+#pragma region Sounds
+
+	UPROPERTY(EditAnywhere)
+	USoundBase* SkatePushSoundCue;
+
+#pragma endregion Sounds
 
 public:
 
@@ -101,6 +139,8 @@ protected:
 
 	void StopHorizontalMovement(const FInputActionValue& Value);
 
+	void InitJump();
+
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
@@ -113,6 +153,8 @@ protected:
 	virtual void BeginPlay();
 
 	virtual void Tick(float DeltaSeconds) override;
+
+	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode) override;
 
 public:
 
@@ -127,7 +169,22 @@ public:
 
 	float NormalizeValue(float Source, float MinVal, float MaxVal, float Multiplier = 1, bool bAffectsMultiplier = false);
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void SpeedUpSkateboard();
+
+	UFUNCTION(BlueprintCallable)
+	void PlaySpeedUpSound();
+
+	UFUNCTION(BlueprintCallable)
+	void Jumping();
+
+	UFUNCTION(BlueprintCallable)
+	void RestoreSkateStates();
+
+	UFUNCTION(BlueprintCallable)
+	void ResetJump();
+
+	UFUNCTION()
+	void SetAbleToJump();
 };
 

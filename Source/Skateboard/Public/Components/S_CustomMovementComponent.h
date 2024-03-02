@@ -19,6 +19,9 @@ public:
 #pragma region SpeedProperties
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Speed")
+	float MaxJumpZSpeed = 500;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Speed")
 	float MaxSkateSpeed = 1000;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Speed")
