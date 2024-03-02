@@ -9,12 +9,14 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Components/S_CustomMovementComponent.h"
 
 
 //////////////////////////////////////////////////////////////////////////
 // ASkateboardCharacter
 
-ASkateboardCharacter::ASkateboardCharacter()
+ASkateboardCharacter::ASkateboardCharacter(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<US_CustomMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -23,6 +25,8 @@ ASkateboardCharacter::ASkateboardCharacter()
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
+
+	CustomMovementComponent = Cast<US_CustomMovementComponent>(GetCharacterMovement()); // SetCustomMovementComponent
 
 	// Configure character movement
 	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
@@ -123,7 +127,3 @@ void ASkateboardCharacter::Look(const FInputActionValue& Value)
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
 }
-
-
-
-
