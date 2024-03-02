@@ -13,5 +13,35 @@ UCLASS()
 class SKATEBOARD_API US_CustomMovementComponent : public UCharacterMovementComponent
 {
 	GENERATED_BODY()
-	
+
+public:
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Speed")
+	float MaxSkateSpeed = 1000;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Speed")
+	float ImpulseSpeed = 300;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Speed")
+	float DecelerationSpeed = 2;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Speed")
+	float ImpulseDecelerationSpeed = 0.5;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Speed")
+	float HorizontalDecelerationSpeed = 0.75;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Rotation")
+	float FloorRotationControl = 0.75;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Rotation")
+	float AirRotationControl = 0.1;
+
+protected:
+
+	virtual void BeginPlay() override;
+
+public:
+
+	void SetMaxWalkSpeed(float MaxSpeed);
 };
