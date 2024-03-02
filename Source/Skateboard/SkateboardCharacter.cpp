@@ -18,6 +18,9 @@
 ASkateboardCharacter::ASkateboardCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<US_CustomMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
+	// Setting init values to movement properties
+	bAbleToImpulse = true;
+
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 		
@@ -29,16 +32,8 @@ ASkateboardCharacter::ASkateboardCharacter(const FObjectInitializer& ObjectIniti
 	CustomMovementComponent = Cast<US_CustomMovementComponent>(GetCharacterMovement()); // SetCustomMovementComponent
 
 	// Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
+	GetCharacterMovement()->bOrientRotationToMovement = false; // Character does not moves in the direction of input...	
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f); // ...at this rotation rate
-
-	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
-	// instead of recompiling to adjust them
-	GetCharacterMovement()->JumpZVelocity = 700.f;
-	GetCharacterMovement()->AirControl = 0.35f;
-	GetCharacterMovement()->MaxWalkSpeed = 500.f;
-	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
-	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -51,8 +46,9 @@ ASkateboardCharacter::ASkateboardCharacter(const FObjectInitializer& ObjectIniti
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
-	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
-	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+	// Creating and attaching Skateboard mesh to center of mass socket
+	SkateMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Skateboard Mesh")); 
+	SkateMeshComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, FName("center_of_massSocket")); 
 }
 
 void ASkateboardCharacter::BeginPlay()
@@ -68,9 +64,32 @@ void ASkateboardCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+
+	
 }
 
-//////////////////////////////////////////////////////////////////////////
+void ASkateboardCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	UE_LOG(LogTemp, Warning, TEXT("%f"), CustomMovementComponent->MaxWalkSpeed);
+
+	const FRotator Rotation = GetActorRotation();
+	const FRotator YawRotation(0, Rotation.Yaw, 0);
+
+	const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+
+	if (bIsTryingToImpulse)
+	{
+		AddMovementInput(ForwardDirection, 1);
+	}
+
+	if(bIsDecelerating)
+	{
+		
+	}
+}
+
 // Input
 
 void ASkateboardCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
@@ -84,12 +103,12 @@ void ASkateboardCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 
 		//Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASkateboardCharacter::Move);
+		EnhancedInputComponent->BindAction(ReleaseForwardAction, ETriggerEvent::Completed, this, &ASkateboardCharacter::StopForwardMovement);
+		EnhancedInputComponent->BindAction(ReleaseHorizontalAction, ETriggerEvent::Completed, this, &ASkateboardCharacter::StopHorizontalMovement);
 
 		//Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASkateboardCharacter::Look);
-
 	}
-
 }
 
 void ASkateboardCharacter::Move(const FInputActionValue& Value)
@@ -105,14 +124,70 @@ void ASkateboardCharacter::Move(const FInputActionValue& Value)
 
 		// get forward vector
 		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	
+
+		if(MovementVector.Y > 0 && CustomMovementComponent->MovementMode != MOVE_Falling)
+		{
+			bIsTryingToImpulse = true;
+			bIsDecelerating = false;
+			CurrentDecelerationSpeed = CustomMovementComponent->ImpulseDecelerationSpeed;
+			bIsMovingHorizontally = false;
+			if(bAbleToImpulse)
+			{
+				bIsImpulsing = true;
+				SpeedUpSkateboard();
+				FTimerHandle TimerHandle;
+				bAbleToImpulse = false;
+				GetWorld()->GetTimerManager().SetTimer(TimerHandle, [&]
+					{
+						bAbleToImpulse = true;
+					}, 1, false);
+			}
+		}
+		else if(MovementVector.Y < 0)
+		{
+			bIsTryingToImpulse = false;
+			bIsDecelerating = true;
+
+			CurrentDecelerationSpeed = CustomMovementComponent->DecelerationSpeed;
+			CustomMovementComponent->MaxWalkSpeed = FMath::Clamp(GetCharacterMovement()->MaxWalkSpeed - CurrentDecelerationSpeed,
+				0, CustomMovementComponent->MaxSkateSpeed);
+			if (YawRotation.UnrotateVector(GetCharacterMovement()->Velocity).X < 100)
+			{
+				GetCharacterMovement()->MaxWalkSpeed = 0;
+			}
+			else
+			{
+				AddMovementInput(ForwardDirection, 1);
+			}
+		}
+
 		// get right vector 
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-		// add movement 
-		AddMovementInput(ForwardDirection, MovementVector.Y);
-		AddMovementInput(RightDirection, MovementVector.X);
+		if(YawRotation.UnrotateVector(GetCharacterMovement()->Velocity).X > 50)
+		{
+			float ControlMove = MovementVector.X * CustomMovementComponent->MaxWalkSpeed *
+				(CustomMovementComponent->MovementMode == MOVE_Walking ? CustomMovementComponent->FloorRotationControl 
+					: CustomMovementComponent->AirRotationControl);
+
+			float FinalMovementXValue = NormalizeValue(ControlMove, -CustomMovementComponent->MaxSkateSpeed,
+				CustomMovementComponent->MaxSkateSpeed, 2, true);
+
+			bIsMovingHorizontally = FMath::Abs(FinalMovementXValue) >= 0.1;
+
+			AddActorWorldRotation(FRotator(0, FinalMovementXValue, 0));
+		}
 	}
+}
+
+void ASkateboardCharacter::StopForwardMovement(const FInputActionValue& Value)
+{
+	bIsImpulsing = false;
+}
+
+void ASkateboardCharacter::StopHorizontalMovement(const FInputActionValue& Value)
+{
+	bIsMovingHorizontally = false;
 }
 
 void ASkateboardCharacter::Look(const FInputActionValue& Value)
@@ -126,4 +201,21 @@ void ASkateboardCharacter::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+float ASkateboardCharacter::NormalizeValue(float Source, float MinVal, float MaxVal, float Multiplier,
+	bool bAffectsMultiplier)
+{
+	float PrevResult = (Source - MinVal) / (MaxVal - MinVal);
+	if (bAffectsMultiplier)
+	{
+		return Multiplier * PrevResult - Multiplier / 2;
+	}
+	return PrevResult;
+}
+
+void ASkateboardCharacter::SpeedUpSkateboard()
+{
+	GetCharacterMovement()->MaxWalkSpeed = FMath::Clamp(GetCharacterMovement()->MaxWalkSpeed +
+		CustomMovementComponent->ImpulseSpeed, 0, CustomMovementComponent->MaxSkateSpeed);
 }
