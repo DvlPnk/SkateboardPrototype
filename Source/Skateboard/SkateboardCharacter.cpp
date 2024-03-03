@@ -91,6 +91,11 @@ void ASkateboardCharacter::Tick(float DeltaSeconds)
 
 	const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 
+	if (GetCharacterMovement()->MovementMode == MOVE_Falling)
+	{
+		InAirTime += DeltaSeconds;
+	}
+
 	if (bIsTryingToImpulse)
 	{
 		AddMovementInput(ForwardDirection, 1);
@@ -142,6 +147,7 @@ void ASkateboardCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode,
 	{
 		GetWorld()->GetTimerManager().SetTimer(JumpingTimer, this, &ASkateboardCharacter::SetAbleToJump, 1, false);
 		UE_LOG(LogTemp, Warning, TEXT("InAirTime: %f"), InAirTime);
+		OnAirTimeDelegate.ExecuteIfBound(InAirTime);
 	}
 }
 
@@ -174,7 +180,7 @@ void ASkateboardCharacter::Move(const FInputActionValue& Value)
 	if (Controller != nullptr)
 	{
 		// find out which way is forward
-		const FRotator Rotation = Controller->GetControlRotation();
+		const FRotator Rotation = GetActorRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
 		// get forward vector
@@ -202,6 +208,7 @@ void ASkateboardCharacter::Move(const FInputActionValue& Value)
 			else if(GetCharacterMovement()->MovementMode != EMovementMode::MOVE_Falling)
 			{
 				bIsImpulsing = false;
+				AddMovementInput(ForwardDirection, 1);
 			}
 		}
 		else if(MovementVector.Y < 0 && bIsAbleToDecelerate && !bIsJumping)
@@ -271,6 +278,7 @@ void ASkateboardCharacter::InitJump()
 
 	if (GetCharacterMovement()->MaxWalkSpeed < 200)
 	{
+		bIsAbleToJump = false;
 		return;
 	}
 

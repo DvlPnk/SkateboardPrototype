@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
+#include "Components/S_CustomMovementComponent.h"
 #include "Components/TimelineComponent.h"
 #include "SkateboardCharacter.generated.h"
 
@@ -14,6 +15,8 @@ class UInputMappingContext;
 class UCameraComponent;
 class USpringArmComponent;
 class US_CustomMovementComponent;
+
+DECLARE_DELEGATE_OneParam(FOnAirTimeDelegate, float)
 
 UCLASS(config=Game)
 class ASkateboardCharacter : public ACharacter
@@ -129,6 +132,10 @@ protected:
 
 #pragma endregion
 
+public:
+
+	FOnAirTimeDelegate OnAirTimeDelegate;
+
 protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
@@ -196,6 +203,8 @@ public:
 	/** Returns CustomMovementComponent **/
 	FORCEINLINE US_CustomMovementComponent* GetCustomMovementComponent() const { return CustomMovementComponent; }
 
+	FORCEINLINE float GetMaxWalkSpeed() const { return CustomMovementComponent->MaxWalkSpeed; }
+
 	float NormalizeValue(float Source, float MinVal, float MaxVal, float Multiplier = 1, bool bAffectsMultiplier = false);
 
 	UFUNCTION(BlueprintCallable)
@@ -218,5 +227,6 @@ public:
 
 	UFUNCTION()
 	void StabilizeCenterOfMass(float Value);
+
 };
 

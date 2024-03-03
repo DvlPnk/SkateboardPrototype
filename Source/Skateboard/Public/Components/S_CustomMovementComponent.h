@@ -22,7 +22,7 @@ public:
 	float MaxJumpZSpeed = 500;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Speed")
-	float MaxSkateSpeed = 1000;
+	float MaxSkateSpeed = 1100;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Speed")
 	float ImpulseSpeed = 300;
