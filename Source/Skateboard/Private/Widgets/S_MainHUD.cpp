@@ -38,15 +38,34 @@ void US_MainHUD::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 
 		SpeedTextBlock->SetText(FText::FromString(CurrentSpeed));
 	}
+
+	UpdateScore();
+
 }
 
 void US_MainHUD::AddScore(float Value)
 {
 	CurrentScore += Value * ScoreMultiplier;
+	bCanUpdateScore = true;
+}
 
-	UE_LOG(LogTemp, Warning, TEXT("%i"), CurrentScore);
+void US_MainHUD::UpdateScore()
+{
+	if (LastScore == CurrentScore || !bCanUpdateScore)
+	{
+		return;
+	}
 
-	int Score = CurrentScore;
+	UE_LOG(LogTemp, Warning, TEXT("Update"));
+
+	bCanUpdateScore = false;
+
+	GetWorld()->GetTimerManager().SetTimer(ScoreUpdateTimerHandle, this,
+		&US_MainHUD::SetCanUpdateScore, ScoreUpdateTime, false);
+
+	LastScore += 1;
+
+	int Score = LastScore;
 
 	FString ScoreString = "0000";
 	while (Score / 10 > 0)
@@ -55,7 +74,7 @@ void US_MainHUD::AddScore(float Value)
 		Score /= 10;
 	}
 
-	ScoreString.Append(FString::FromInt(CurrentScore));
+	ScoreString.Append(FString::FromInt(LastScore));
 
 	ScoreTextBlock->SetText(FText::FromString(ScoreString));
 }

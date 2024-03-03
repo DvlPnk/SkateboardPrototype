@@ -208,7 +208,6 @@ void ASkateboardCharacter::Move(const FInputActionValue& Value)
 			else if(GetCharacterMovement()->MovementMode != EMovementMode::MOVE_Falling)
 			{
 				bIsImpulsing = false;
-				AddMovementInput(ForwardDirection, 1);
 			}
 		}
 		else if(MovementVector.Y < 0 && bIsAbleToDecelerate && !bIsJumping)

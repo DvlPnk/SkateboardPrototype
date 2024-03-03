@@ -16,8 +16,12 @@ class SKATEBOARD_API US_MainHUD : public UUserWidget
 {
 	GENERATED_BODY()
 
+private:
+
 	UPROPERTY(EditAnywhere)
 	ASkateboardCharacter* Player;
+
+#pragma region UIComponents
 
 	UPROPERTY(EditAnywhere, meta = (BindWidget))
 	UTextBlock* SpeedTextBlock;
@@ -25,11 +29,32 @@ class SKATEBOARD_API US_MainHUD : public UUserWidget
 	UPROPERTY(EditAnywhere, meta = (BindWidget))
 	UTextBlock* ScoreTextBlock;
 
+	/*UPROPERTY(EditAnywhere, meta = (BindWidget))
+	UTextBlock* AddingScoreTextBlock;*/
+
+#pragma endregion
+
+#pragma region ScoreVariables
+
+	UPROPERTY()
+	FTimerHandle ScoreUpdateTimerHandle;
+
+	UPROPERTY()
+	float ScoreUpdateTime = 0.05;
+
+	UPROPERTY()
+	bool bCanUpdateScore = true;
+
 	UPROPERTY(EditAnywhere)
 	int CurrentScore;
 
 	UPROPERTY(EditAnywhere)
-	int ScoreMultiplier = 10;
+	int LastScore;
+
+	UPROPERTY(EditAnywhere)
+	int ScoreMultiplier = 12.8;
+
+#pragma endregion
 
 	virtual void NativeConstruct() override;
 
@@ -37,4 +62,10 @@ class SKATEBOARD_API US_MainHUD : public UUserWidget
 
 	UFUNCTION()
 	void AddScore(float Value);
+
+	UFUNCTION()
+	void UpdateScore();
+
+	UFUNCTION()
+	void SetCanUpdateScore() { bCanUpdateScore = true; }
 };
