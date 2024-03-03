@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
+#include "Components/TimelineComponent.h"
 #include "SkateboardCharacter.generated.h"
 
 
@@ -33,7 +34,7 @@ class ASkateboardCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
 	UStaticMeshComponent* SkateMeshComponent;
 
-#pragma endregion VisibleComponents
+#pragma endregion
 
 protected:
 
@@ -62,7 +63,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* ReleaseHorizontalAction;
 
-#pragma endregion MappingContext
+#pragma endregion
+
+#pragma region SkateVariables
+
+#pragma region ImpulseMove
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
 	float CurrentDecelerationSpeed;
@@ -82,11 +87,34 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
 	bool bIsAbleToDecelerate;
 
+#pragma endregion
+
+#pragma region HorizontalMove
+
+	UPROPERTY(EditDefaultsOnly)
+	FTimeline StabilizeTimeLine;
+
+	UPROPERTY(EditDefaultsOnly)
+	UCurveFloat* StabilizeCurve;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
+	float CurrentSkateRotation;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
+	float CurrentHorizontalRotationRate;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
 	bool bIsMovingHorizontally;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
 	bool bIsAbleToMoveHorizontally;
+
+#pragma endregion
+
+#pragma region Jump
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
+	FTimerHandle JumpingTimer;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
 	bool bIsJumping;
@@ -94,11 +122,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
 	bool bIsAbleToJump;
 
-	UPROPERTY()
-	FTimerHandle JumpingTimer;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
 	float InAirTime;
+
+#pragma endregion
+
+#pragma endregion
 
 protected:
 
@@ -186,5 +215,8 @@ public:
 
 	UFUNCTION()
 	void SetAbleToJump();
+
+	UFUNCTION()
+	void StabilizeCenterOfMass(float Value);
 };
 

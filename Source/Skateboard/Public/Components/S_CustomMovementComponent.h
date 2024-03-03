@@ -36,7 +36,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Speed")
 	float HorizontalDecelerationSpeed = 0.75;
 
-#pragma endregion SpeedProperties
+#pragma endregion
 
 #pragma region RotationProperties
 
@@ -46,7 +46,22 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Rotation")
 	float AirRotationControl = 0.1;
 
-#pragma endregion RotationProperties
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Rotation")
+	float MaxLeftSkateRotation = -10;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Rotation")
+	float MaxRightSkateRotation = 7;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Rotation")
+	float LeftSkateRotationRate = -0.05;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Rotation")
+	float RightSkateRotationRate = 0.1;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Rotation")
+	float StabilizeRate = 0.025;
+
+#pragma endregion
 
 protected:
 

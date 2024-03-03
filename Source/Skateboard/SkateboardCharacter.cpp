@@ -61,6 +61,15 @@ void ASkateboardCharacter::BeginPlay()
 	// Setting animation instance reference
 	PlayerAnimInstance = GetMesh()->GetAnimInstance();
 
+	// Setting curve for StabilizeTimeLine
+	if (StabilizeCurve)
+	{
+		FOnTimelineFloat TimelineProgressCrouch;
+		TimelineProgressCrouch.BindUFunction(this, FName("StabilizeCenterOfMass"));
+		StabilizeTimeLine.AddInterpFloat(StabilizeCurve, TimelineProgressCrouch);
+		StabilizeTimeLine.SetLooping(false);
+	}
+
 	//Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
@@ -75,7 +84,7 @@ void ASkateboardCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	UE_LOG(LogTemp, Warning, TEXT("%f"), CustomMovementComponent->MaxWalkSpeed);
+	StabilizeTimeLine.TickTimeline(DeltaSeconds);
 
 	const FRotator Rotation = GetActorRotation();
 	const FRotator YawRotation(0, Rotation.Yaw, 0);
@@ -89,7 +98,14 @@ void ASkateboardCharacter::Tick(float DeltaSeconds)
 
 	if(bIsMovingHorizontally)
 	{
-		
+		StabilizeTimeLine.Stop();
+		CurrentSkateRotation = FMath::Clamp(CurrentSkateRotation + CurrentHorizontalRotationRate,
+			CustomMovementComponent->MaxLeftSkateRotation, CustomMovementComponent->MaxRightSkateRotation);
+		SetActorRotation(FRotator(GetActorRotation().Pitch, GetActorRotation().Yaw, CurrentSkateRotation));
+	}
+	else
+	{
+		StabilizeTimeLine.Play();
 	}
 
 	if(!bIsImpulsing && !bIsDecelerating && GetCharacterMovement()->MovementMode != EMovementMode::MOVE_Falling)
@@ -193,7 +209,9 @@ void ASkateboardCharacter::Move(const FInputActionValue& Value)
 			bIsTryingToImpulse = false;
 			bIsDecelerating = true;
 
-			CurrentDecelerationSpeed = CustomMovementComponent->DecelerationSpeed;
+			CurrentDecelerationSpeed = bIsMovingHorizontally ? 
+				CustomMovementComponent->DecelerationSpeed + CustomMovementComponent->HorizontalDecelerationSpeed :
+				CustomMovementComponent->DecelerationSpeed;
 
 			CustomMovementComponent->MaxWalkSpeed = FMath::Clamp(GetCharacterMovement()->MaxWalkSpeed - CurrentDecelerationSpeed,
 				0, CustomMovementComponent->MaxSkateSpeed);
@@ -208,7 +226,7 @@ void ASkateboardCharacter::Move(const FInputActionValue& Value)
 			}
 		}
 
-		// get right vector 
+		// Get right vector 
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
 		if(YawRotation.UnrotateVector(GetCharacterMovement()->Velocity).X > 50 && bIsAbleToMoveHorizontally)
@@ -221,6 +239,12 @@ void ASkateboardCharacter::Move(const FInputActionValue& Value)
 				CustomMovementComponent->MaxSkateSpeed, 2, true);
 
 			bIsMovingHorizontally = FMath::Abs(FinalMovementXValue) >= 0.1;
+
+			if (GetCharacterMovement()->MovementMode == MOVE_Walking)
+			{
+				CurrentHorizontalRotationRate = MovementVector.X > 0 ?
+					CustomMovementComponent->RightSkateRotationRate : CustomMovementComponent->LeftSkateRotationRate;
+			}
 
 			AddActorWorldRotation(FRotator(0, FinalMovementXValue, 0));
 		}
@@ -323,4 +347,11 @@ void ASkateboardCharacter::ResetJump()
 void ASkateboardCharacter::SetAbleToJump()
 {
 	bIsAbleToJump = true;
+}
+
+void ASkateboardCharacter::StabilizeCenterOfMass(float Value)
+{
+	SetActorRotation(FMath::Lerp(GetActorRotation(), FRotator(GetActorRotation().Pitch, GetActorRotation().Yaw, 0),
+		Value * CustomMovementComponent->StabilizeRate));
+	CurrentSkateRotation = GetActorRotation().Roll;
 }
