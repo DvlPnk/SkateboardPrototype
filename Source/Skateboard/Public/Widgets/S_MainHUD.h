@@ -40,7 +40,7 @@ private:
 	FTimerHandle ScoreUpdateTimerHandle;
 
 	UPROPERTY()
-	float ScoreUpdateTime = 0.05;
+	float ScoreUpdateTime = 1;
 
 	UPROPERTY()
 	bool bCanUpdateScore = true;

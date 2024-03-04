@@ -34,6 +34,7 @@ class ASkateboardCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
 
+	/** Skateboard Mesh */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
 	UStaticMeshComponent* SkateMeshComponent;
 
@@ -60,9 +61,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
 
+	/** Reset Rotation Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* ResetRotation;
+
+	/** Release Forward Move Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* ReleaseForwardAction;
 
+	/** Release Horizontal Move Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* ReleaseHorizontalAction;
 
@@ -125,10 +132,23 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
 	bool bIsAbleToJump;
 
+#pragma endregion
+
+#pragma endregion
+
+#pragma region Score
+
+	UPROPERTY(EditDefaultsOnly)
+	TArray<TEnumAsByte<EObjectTypeQuery>> SkateboardObstacleTypes;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
 	float InAirTime;
 
-#pragma endregion
+	UPROPERTY(EditDefaultsOnly)
+	AActor* CurrentObstacle;
+
+	UPROPERTY(EditDefaultsOnly)
+	AActor* LastObstacle;
 
 #pragma endregion
 
@@ -180,6 +200,8 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
+	void ResetCharacterRotation(const FInputActionValue& Value);
+
 protected:
 
 	// APawn interface
@@ -207,6 +229,21 @@ public:
 
 	float NormalizeValue(float Source, float MinVal, float MaxVal, float Multiplier = 1, bool bAffectsMultiplier = false);
 
+	UFUNCTION()
+	void ForwardMovement();
+
+	UFUNCTION()
+	void DecelerationMovement(FRotator NewYawRotator, FVector NewForwardDirection);
+
+	UFUNCTION()
+	void StopMovement(FRotator NewYawRotator, FVector NewForwardDirection);
+
+	UFUNCTION()
+	void HorizontalMovement(float MovementVectorX);
+
+	UFUNCTION()
+	void HorizontalRotation();
+
 	UFUNCTION(BlueprintCallable)
 	void SpeedUpSkateboard();
 
@@ -228,5 +265,13 @@ public:
 	UFUNCTION()
 	void StabilizeCenterOfMass(float Value);
 
+	UFUNCTION()
+	bool CheckIsFalling() const { return CustomMovementComponent->MovementMode == MOVE_Falling; }
+
+	UFUNCTION()
+	float GetForwardVelocity();
+
+	UFUNCTION()
+	void CheckJumpOverObstacle();
 };
 

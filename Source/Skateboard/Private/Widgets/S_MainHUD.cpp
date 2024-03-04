@@ -47,6 +47,7 @@ void US_MainHUD::AddScore(float Value)
 {
 	CurrentScore += Value * ScoreMultiplier;
 	bCanUpdateScore = true;
+	ScoreUpdateTime = (float) 0.5 / (CurrentScore - LastScore);
 }
 
 void US_MainHUD::UpdateScore()
@@ -55,8 +56,6 @@ void US_MainHUD::UpdateScore()
 	{
 		return;
 	}
-
-	UE_LOG(LogTemp, Warning, TEXT("Update"));
 
 	bCanUpdateScore = false;
 
