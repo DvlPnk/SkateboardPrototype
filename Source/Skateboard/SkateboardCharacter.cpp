@@ -98,7 +98,7 @@ void ASkateboardCharacter::Tick(float DeltaSeconds)
 		InAirTime += DeltaSeconds;
 	}
 
-	if (bIsTryingToImpulse)
+	if (bIsTryingToImpulse || GetForwardVelocity() > 100)
 	{
 		AddMovementInput(ForwardDirection, 1);
 	}
@@ -145,6 +145,7 @@ void ASkateboardCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASkateboardCharacter::Move);
 		EnhancedInputComponent->BindAction(ReleaseForwardAction, ETriggerEvent::Completed, this, &ASkateboardCharacter::StopForwardMovement);
 		EnhancedInputComponent->BindAction(ReleaseHorizontalAction, ETriggerEvent::Completed, this, &ASkateboardCharacter::StopHorizontalMovement);
+		EnhancedInputComponent->BindAction(ReleaseDecelerationAction, ETriggerEvent::Completed, this, &ASkateboardCharacter::StopDecelerationMovement);
 
 		//Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASkateboardCharacter::Look);
@@ -189,6 +190,11 @@ void ASkateboardCharacter::Move(const FInputActionValue& Value)
 void ASkateboardCharacter::StopForwardMovement(const FInputActionValue& Value)
 {
 	bIsImpulsing = false;
+}
+
+void ASkateboardCharacter::StopDecelerationMovement(const FInputActionValue& Value)
+{
+	bIsDecelerating = false;
 }
 
 void ASkateboardCharacter::StopHorizontalMovement(const FInputActionValue& Value)
@@ -289,6 +295,7 @@ void ASkateboardCharacter::DecelerationMovement(FRotator NewYawRotator, FVector 
 {
 	bIsTryingToImpulse = false;
 	bIsDecelerating = true;
+	bIsImpulsing = false;
 
 	CurrentDecelerationSpeed = bIsMovingHorizontally ?
 		CustomMovementComponent->DecelerationSpeed + CustomMovementComponent->HorizontalDecelerationSpeed :
@@ -309,6 +316,8 @@ void ASkateboardCharacter::DecelerationMovement(FRotator NewYawRotator, FVector 
 
 void ASkateboardCharacter::StopMovement(FRotator NewYawRotator, FVector NewForwardDirection)
 {
+	UE_LOG(LogTemp, Warning, TEXT("%i"), bIsImpulsing);
+	UE_LOG(LogTemp, Warning, TEXT("%i"), bIsDecelerating);
 	if (!bIsImpulsing && !bIsDecelerating && !CheckIsFalling())
 	{
 		if (GetForwardVelocity() > 100)

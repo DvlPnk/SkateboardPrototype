@@ -69,6 +69,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* ReleaseForwardAction;
 
+	/** Release Deceleration Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* ReleaseDecelerationAction;
+
 	/** Release Horizontal Move Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* ReleaseHorizontalAction;
@@ -192,6 +196,8 @@ protected:
 	void Move(const FInputActionValue& Value);
 
 	void StopForwardMovement(const FInputActionValue& Value);
+
+	void StopDecelerationMovement(const FInputActionValue& Value);
 
 	void StopHorizontalMovement(const FInputActionValue& Value);
 
