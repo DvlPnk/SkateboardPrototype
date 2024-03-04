@@ -168,7 +168,7 @@ void ASkateboardCharacter::Move(const FInputActionValue& Value)
 
 		if(MovementVector.Y > 0 && !CheckIsFalling())
 		{
-			ForwardMovement();
+			ForwardMovement(ForwardDirection);
 		}
 		else if(MovementVector.Y < 0 && bIsAbleToDecelerate && !bIsJumping)
 		{
@@ -259,7 +259,7 @@ float ASkateboardCharacter::NormalizeValue(float Source, float MinVal, float Max
 	return PrevResult;
 }
 
-void ASkateboardCharacter::ForwardMovement()
+void ASkateboardCharacter::ForwardMovement(FVector NewForwardDirection)
 {
 	bIsTryingToImpulse = true;
 	bIsDecelerating = false;
@@ -281,6 +281,7 @@ void ASkateboardCharacter::ForwardMovement()
 	else if (GetCharacterMovement()->MovementMode != EMovementMode::MOVE_Falling)
 	{
 		bIsImpulsing = false;
+		AddMovementInput(NewForwardDirection, 1);
 	}
 }
 

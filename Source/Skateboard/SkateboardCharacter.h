@@ -230,7 +230,7 @@ public:
 	float NormalizeValue(float Source, float MinVal, float MaxVal, float Multiplier = 1, bool bAffectsMultiplier = false);
 
 	UFUNCTION()
-	void ForwardMovement();
+	void ForwardMovement(FVector NewForwardDirection);
 
 	UFUNCTION()
 	void DecelerationMovement(FRotator NewYawRotator, FVector NewForwardDirection);
