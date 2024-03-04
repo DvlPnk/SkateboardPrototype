@@ -124,7 +124,7 @@ void ASkateboardCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode,
 	}
 	if (PrevMovementMode == MOVE_Falling)
 	{
-		GetWorld()->GetTimerManager().SetTimer(JumpingTimer, this, &ASkateboardCharacter::SetAbleToJump, 1, false);
+		GetWorld()->GetTimerManager().SetTimer(JumpingTimer, this, &ASkateboardCharacter::SetAbleToJump, 0.5, false);
 		// Sending InAirTime
 		OnAirTimeDelegate.ExecuteIfBound(InAirTime);
 	}
@@ -200,7 +200,7 @@ void ASkateboardCharacter::InitJump()
 {
 	if (!bIsAbleToJump) return;
 
-	if (GetCharacterMovement()->MaxWalkSpeed < 200)
+	if (GetCharacterMovement()->MaxWalkSpeed < 150 || CheckIsFalling())
 	{
 		bIsAbleToJump = false;
 		return;
@@ -454,6 +454,7 @@ void ASkateboardCharacter::CheckJumpOverObstacle()
 	}
 	else
 	{
+		// If it's not an obstacle class, add a preset value to InAirTime to final score
 		InAirTime += 1.5f;
 	}
 }
