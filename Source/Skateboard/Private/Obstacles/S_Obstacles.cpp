@@ -15,11 +15,12 @@ AS_Obstacles::AS_Obstacles()
 	/** Creating Obstacle Mesh Component and attaching to root*/
 	ObstacleMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Obstacle Mesh Component"));
 	ObstacleMeshComponent->SetupAttachment(PivotComponent);
+	ObstacleMeshComponent->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No; // Setting character can't step on
 
 	/** Creating Obstacle Collision and attaching to root*/
 	ObstacleCollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("Obstacle Collision Component"));
 	ObstacleCollisionComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
+	ObstacleMeshComponent->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No; // Setting character can't step on
 }
 
 // Called when the game starts or when spawned

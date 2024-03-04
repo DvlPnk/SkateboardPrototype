@@ -26,15 +26,7 @@ void US_MainHUD::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 
 	if(Player)
 	{
-		int MaxWalkSpeed = Player->GetMaxWalkSpeed();
-		FString CurrentSpeed = "000";
-		while(MaxWalkSpeed / 10 > 0)
-		{
-			CurrentSpeed.RemoveAt(0);
-			MaxWalkSpeed /= 10;
-		}
-
-		CurrentSpeed.Append(FString::FromInt(Player->GetMaxWalkSpeed()));
+		FString CurrentSpeed = FromIntToString(Player->GetMaxWalkSpeed(), 3);
 
 		SpeedTextBlock->SetText(FText::FromString(CurrentSpeed));
 	}
@@ -64,16 +56,26 @@ void US_MainHUD::UpdateScore()
 
 	LastScore += 1;
 
-	int Score = LastScore;
-
-	FString ScoreString = "0000";
-	while (Score / 10 > 0)
-	{
-		ScoreString.RemoveAt(0);
-		Score /= 10;
-	}
-
-	ScoreString.Append(FString::FromInt(LastScore));
+	FString ScoreString = FromIntToString(LastScore, 4);
 
 	ScoreTextBlock->SetText(FText::FromString(ScoreString));
+}
+
+FString US_MainHUD::FromIntToString(int Value, int ZeroQuantity)
+{
+	FString FinalString = "";
+	for(int i = 0; i < ZeroQuantity; i++)
+	{
+		FinalString.Append("0");
+	}
+
+	int TestValue = Value;
+
+	while (TestValue / 10 > 0)
+	{
+		FinalString.RemoveAt(0);
+		TestValue /= 10;
+	}
+
+	return FinalString.Append(FString::FromInt(Value));
 }

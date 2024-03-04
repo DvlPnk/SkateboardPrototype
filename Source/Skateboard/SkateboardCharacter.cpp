@@ -421,13 +421,16 @@ void ASkateboardCharacter::CheckJumpOverObstacle()
 {
 	if (!CheckIsFalling()) return;
 
+	// Raycast Start point from center of mass.
 	FVector Start = GetMesh()->GetSocketTransform("center_of_massSocket").GetLocation();
+
+	// Raycast End point
 	FVector End = Start + FVector(0, 0, Start.Z - 1000);
 
 	FHitResult OutResult;
 
 	bool bHasHit = UKismetSystemLibrary::LineTraceSingleForObjects(GetWorld(), Start, End, SkateboardObstacleTypes,
-		false, TArray<AActor*>(), EDrawDebugTrace::ForOneFrame, OutResult, false);
+		false, TArray<AActor*>(), EDrawDebugTrace::None, OutResult, false);
 
 	if (!bHasHit) return;
 
@@ -435,12 +438,16 @@ void ASkateboardCharacter::CheckJumpOverObstacle()
 
 	if (LastObstacle == nullptr)
 	{
+		// First obstacle after jump
 		LastObstacle = CurrentObstacle;
 	}
 	else if (CurrentObstacle == LastObstacle) return;
 
+	// More obstacles jumped over detected.
+
 	LastObstacle = CurrentObstacle;
 
+	/** Verify (just in case) if the detected actor is an instance of the obstacle class */
 	if (AS_Obstacles* Obstacle = Cast<AS_Obstacles>(CurrentObstacle))
 	{
 		InAirTime += Obstacle->GetObstacleHeight() / 10;

@@ -29,9 +29,6 @@ private:
 	UPROPERTY(EditAnywhere, meta = (BindWidget))
 	UTextBlock* ScoreTextBlock;
 
-	/*UPROPERTY(EditAnywhere, meta = (BindWidget))
-	UTextBlock* AddingScoreTextBlock;*/
-
 #pragma endregion
 
 #pragma region ScoreVariables
@@ -68,4 +65,8 @@ private:
 
 	UFUNCTION()
 	void SetCanUpdateScore() { bCanUpdateScore = true; }
+
+	/** Convert int to String with zeros on the left*/
+	UFUNCTION()
+	FString FromIntToString(int Value, int ZeroQuantity);
 };
